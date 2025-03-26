@@ -9,14 +9,13 @@ class RandomObjectForce(ForceField):
 
     Parameters:
     -----------
-    strength: float
-        The strength of the wind.
+    abs_tol: float
+        How close the pos in _get_acc must be to a particle before we decide to apply force to that location
     """
 
-    def __init__(self, entity, abs_tol=1e-2):
+    def __init__(self, abs_tol=1e-2):
         super().__init__()
         self._abs_tol = abs_tol
-        self._entity = entity
 
         self._particles = ti.Vector.field(3, dtype=ti.float32, shape=(10000))
         self._forces = ti.Vector.field(3, dtype=ti.float32, shape=(10000))

@@ -1,15 +1,8 @@
 import os
 os.environ['PYOPENGL_PLATFORM'] = 'glx'
 import genesis as gs
-import taichi as ti
-import numpy as np
-
 from force_fields import RandomObjectForce
 from pid_controller import PIDController
-
-
-import time
-
 
 ########################## init ##########################
 gs.init(backend=gs.cpu)
