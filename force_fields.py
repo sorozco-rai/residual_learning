@@ -76,7 +76,8 @@ class RandomObjectForce(ForceField):
             # acc = noise * strength
             #acc = noise * self._strength
             #acc = noise * self._strength * self._magnitudes[particle_idx]
-            acc = noise * self._strength
+            # acc = noise * self._strength
+            acc = noise
 
         return acc
 

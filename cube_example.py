@@ -5,6 +5,29 @@ from force_fields import RandomObjectForce
 import taichi as ti
 import numpy as np
 
+
+import time
+
+class PIDController:
+    def __init__(self, kp, ki, kd):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.last_error = 0
+        self.integral = 0
+        self.setpoint = None
+
+    def update_setpoint(self, setpoint):
+        self.setpoint = setpoint
+
+    def update(self, current_value):
+        error = self.setpoint - current_value
+        self.integral += error
+        derivative = error - self.last_error
+        output = self.kp * error + self.ki * self.integral + self.kd * derivative
+        self.last_error = error
+        return output
+
 ########################## init ##########################
 gs.init(backend=gs.cpu)
 ########################## create a scene ##########################
@@ -58,27 +81,32 @@ fluid_box = scene.add_entity(
 )
 
 # fluid_box_force = scene.add_force_field(RandomObjectForce(fluid_box, strength=100000))
-fluid_box_force = scene.add_force_field(RandomObjectForce(fluid_box, strength=2000))
+fluid_box_force = scene.add_force_field(RandomObjectForce(fluid_box, strength=10000))
 fluid_box_force.activate()
 
 ########################## build ##########################
 scene.build()
 
-horizon = 105
+horizon = 1000
+
+pid = PIDController(kp=20000.0, ki=0.1, kd=15000.)
 for i in range(horizon):
-
-
 
     e_particles = elastic_box.get_particles()
     e_particles[:,1] += 0.3
     f_particles = fluid_box.get_particles()
 
-    directions = e_particles - f_particles
-    magnitudes = np.linalg.norm(directions, axis=1)
+
+    pid.update_setpoint(e_particles)
+    forces = pid.update(f_particles)
+
+    # directions = e_particles - f_particles
+    # magnitudes = np.linalg.norm(directions, axis=1)
 
     #normalized_directions = (directions) / np.linalg.norm(directions, axis=1, keepdims=True) 
 
     #fluid_box_force.set_particles_and_forces(f_particles, directions, magnitudes)
-    fluid_box_force.set_particles_and_forces(f_particles, directions)
+    #fluid_box_force.set_particles_and_forces(f_particles, directions)
+    fluid_box_force.set_particles_and_forces(f_particles, forces)
 
     scene.step()
