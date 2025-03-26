@@ -21,15 +21,24 @@ class RandomObjectForce(ForceField):
         self._force = force
 
         self._particles = ti.Vector.field(3, dtype=ti.float32, shape=(10000))
+        self._forces = ti.Vector.field(3, dtype=ti.float32, shape=(10000))
+        # self._magnitudes = ti.field(dtype=ti.float32, shape=(10000))
         self._distances = ti.field(ti.float32, shape=(10000, ))
 
     @ti.kernel
-    def set_particles(self,particles: ti.types.ndarray()):
+    #def set_particles_and_forces(self,particles: ti.types.ndarray(), forces: ti.types.ndarray(), magnitudes: ti.types.ndarray()):
+    def set_particles_and_forces(self,particles: ti.types.ndarray(), forces: ti.types.ndarray()):
         for i in range(particles.shape[0]):
         # for p in particles:
             self._particles[i][0] = particles[i,0]
             self._particles[i][1] = particles[i,1]
             self._particles[i][2] = particles[i,2]
+
+            self._forces[i][0] = forces[i,0]
+            self._forces[i][1] = forces[i,1]
+            self._forces[i][2] = forces[i,2]
+
+            # self._magnitudes[i] = magnitudes[i]
         
     @ti.func
     def _get_acc(self, pos, vel, t, i):
@@ -37,15 +46,19 @@ class RandomObjectForce(ForceField):
 
         # get minimum distance from pos and entity particles 
         min_distance = 1000000.
-        for j in range(self._particles.shape[0]/2):
+        particle_idx = -1
+        for j in range(self._particles.shape[0]):
             self._distances[j] = ti.math.distance(self._particles[j],pos)
 
             if min_distance > self._distances[j]:
+                particle_idx = j
                 min_distance = self._distances[j]
         
         # get random acceleration
         if min_distance < self._abs_tol:
-            noise = (ti.Vector([self._force[0],self._force[1],self._force[2]],dt=gs.ti_float))
+            noise = (ti.Vector([self._forces[particle_idx][0],self._forces[particle_idx][1],self._forces[particle_idx][2]],dt=gs.ti_float))
+            #noise = (ti.Vector([0,0,1],dt=gs.ti_float))
+            # noise = (ti.Vector([self._force[0],self._force[1],self._force[2]],dt=gs.ti_float))
             # noise = (
             #     ti.Vector(
             #         [
@@ -58,6 +71,11 @@ class RandomObjectForce(ForceField):
             #     * 2
             #     - 1
             # )
+
+            # strength = 222222.22 * (self._magnitudes[particle_idx])**2
+            # acc = noise * strength
+            #acc = noise * self._strength
+            #acc = noise * self._strength * self._magnitudes[particle_idx]
             acc = noise * self._strength
 
         return acc
